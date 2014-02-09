@@ -1,0 +1,159 @@
+package main
+
+import (
+  _ "github.com/go-sql-driver/mysql"
+  "database/sql"
+  "net/http"
+  "strconv"
+  "errors"
+  "encoding/json"
+  "fmt"
+  "os"
+  "github.com/gorilla/mux"
+)
+
+type Configuration struct {
+  DatabaseUser string
+  DatabasePassword string
+  DatabaseName string
+  ApiKey string
+}
+
+var conf Configuration
+var db *sql.DB
+
+func formInt(w http.ResponseWriter, r *http.Request, name string) (int64, error) {
+  r.ParseForm()
+  s := r.Form[name]
+  if len(s) == 0 {
+    w.WriteHeader(http.StatusBadRequest)
+    fmt.Printf("Required parameter %v in %v\n", name, r)
+    return 0, errors.New("")
+  }
+  i,err := strconv.ParseInt(s[0], 10, 64)
+  if err != nil { w.WriteHeader(http.StatusBadRequest) }
+  return i, err
+}
+
+func formString(w http.ResponseWriter, r *http.Request, name string) (string, error) {
+  r.ParseForm()
+  s := r.Form[name]
+  if len(s) == 0 {
+    w.WriteHeader(http.StatusBadRequest)
+    fmt.Printf("Required parameter %v in %v\n", name, r)
+    return "", errors.New("")
+  }
+  return s[0], nil
+}
+
+func authenticate(w http.ResponseWriter, r *http.Request) bool {
+  apiKey, err := formString(w, r, "api")
+  if err != nil { return false } 
+  if apiKey != conf.ApiKey {
+    w.WriteHeader(http.StatusUnauthorized)
+    return false
+  }
+  return true
+}
+
+func checkDB() bool {
+  err := db.Ping()
+  if err != nil {
+    fmt.Println("Can't connect to database " + err.Error())
+    return false
+  }
+  return true
+}
+
+func validName(name string) bool {
+  if len(name) == 0 { return false }
+  for i := 0; i < len(name); i++ {
+    if name[i] < 'a' || name[i] > 'z' { return false }
+  }
+  return true
+}
+
+func queryRange(w http.ResponseWriter, r *http.Request) {
+  name, err := formString(w, r, "name")
+  if err != nil { return }
+  if !validName(name) { return }
+
+  from, err := formInt(w, r, "from")
+  if err != nil { return }
+
+  to, err := formInt(w, r, "to")
+  if err != nil { return }
+
+  if !checkDB() { return }
+
+  rows, err := db.Query("SELECT time, value FROM " + name + " WHERE time >= ? AND time < ? ORDER BY time", from, to)
+  if (err != nil) {
+    fmt.Println(err)
+    return
+  }
+  
+  w.Header()["Access-Control-Allow-Origin"] = []string{"*"}
+  fmt.Fprint(w, "[")
+  for i:=0; rows.Next(); i++ {
+    var time, value int64
+    rows.Scan(&time, &value)
+    if i > 0 {fmt.Fprint(w, ",")}
+    fmt.Fprint(w, "[")
+    fmt.Fprint(w, time)
+    fmt.Fprint(w, ",")
+    fmt.Fprint(w, value)
+    fmt.Fprint(w, "]")
+  }
+  fmt.Fprint(w, "]")
+  fmt.Printf("range %v [%v, %v]\n", name, from, to)
+}
+
+func post(w http.ResponseWriter, r *http.Request) {
+  if !authenticate(w, r) { return }
+
+  name, err := formString(w, r, "name")
+  if err != nil { return }
+  if !validName(name) { return }
+
+  time, err := formInt(w, r, "time")
+  if err != nil { return }
+
+  value, err := formInt(w, r, "value")
+  if err != nil { return }
+
+  if !checkDB() { return }
+
+  _, err = db.Exec("CREATE TABLE IF NOT EXISTS `" + name + "` ( `time` bigint UNIQUE, `value` int )")
+  if err != nil {
+    fmt.Printf("Error creating table %v\n", err)
+    return
+  }
+  
+  _, err = db.Exec("INSERT INTO " + name + " (time, value) VALUES (?, ?)", time, value)
+  if err != nil {
+    fmt.Printf("Error inserting value %v\n", err)
+    return
+  }
+
+  fmt.Printf("insert %v %v %v\n", name, time, value)
+}
+
+func main() {
+  file, err := os.Open("conf.json")
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  decoder := json.NewDecoder(file)
+  decoder.Decode(&conf)
+
+  fmt.Printf("Connect database %v as %v\n", conf.DatabaseName, conf.DatabaseUser)
+  db, _ = sql.Open("mysql", conf.DatabaseUser+":"+conf.DatabasePassword+"@/"+conf.DatabaseName)
+
+  router := mux.NewRouter()
+  router.HandleFunc("/feed", post).Methods("POST")
+  router.HandleFunc("/feed", queryRange).Methods("GET")
+  router.Handle("/", http.FileServer(http.Dir("web")))
+  http.Handle("/", router)
+  http.ListenAndServe(":8080", nil)
+}
