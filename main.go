@@ -153,7 +153,7 @@ func main() {
   router := mux.NewRouter()
   router.HandleFunc("/feed", post).Methods("POST")
   router.HandleFunc("/feed", queryRange).Methods("GET")
-  router.Handle("/", http.FileServer(http.Dir("web")))
-  http.Handle("/", router)
+  http.Handle("/feed", router)
+  http.Handle("/", http.FileServer(http.Dir("web")))
   http.ListenAndServe(":8080", nil)
 }
