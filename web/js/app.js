@@ -13,8 +13,10 @@
   var context = null;
 
   var baseLine = 50;
+  var margin = 10;
 
-  var hover = 0;
+  var hoverX = 0;
+  var hoverY = 0;
 
   $(document).ready(function() {
     canvas = document.getElementById("canvas");
@@ -28,8 +30,10 @@
     }, false);
 
     $( window ).resize(function() {
+      resizeChart();
       drawChart();
     });
+    resizeChart();
 
     pollPulseEnd = new Date().getTime();
     
@@ -72,10 +76,15 @@
     }, "json");
   }
 
-  function drawChart() {
-    canvas.width  = window.innerWidth - 50;
+  function resizeChart() {
+    canvas.width  = window.innerWidth;
     canvas.style.width = canvas.width + "px"
-    
+  }
+
+  function drawChart() {
+    context.fillStyle="#eee";
+    context.fillRect(0,0,canvas.width,canvas.height);
+
     var max = 0;
     $.each(lastPulses, function(i, p) {
       max = Math.max(max, deltaToWatts(p[1]));
@@ -83,13 +92,15 @@
 
     context.beginPath();
     context.strokeStyle = "#0000aa";
-    context.lineWidth = 1;
+    context.lineWidth = 1.5;
     var segments = canvas.width / 2;
     for (var i = 0; i < segments; ++i) {
-      var x = i / segments * canvas.width;
+      var x = i / segments;
       var from = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * i / segments;
       var to = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * (i + 1) / segments;
-      var y = canvas.height - averagePower(from, to)/max*(canvas.height - baseLine) - baseLine;
+      var y = averagePower(from, to) / max;
+      x = Math.round(x * (canvas.width - margin*2) + margin) + 0.5;
+      y = Math.round(canvas.height - y*(canvas.height - baseLine) - baseLine) + 0.5;
       if (i == 0) {
         context.moveTo(x,y); 
       } else {
@@ -98,60 +109,90 @@
     };
     context.stroke();
 
-    {
-      var from = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * hover / canvas.width;
+    if (hoverX > 0) {
+      var from = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * hoverX / canvas.width;
       var power = averagePower(from, from + pollPulseMillis / segments);
-      context.beginPath();
-      context.fillStyle = "#0000aa";
       var y = canvas.height - power/max*(canvas.height - baseLine) - baseLine;
-      context.arc(hover,y,4,0,2*Math.PI);
-      context.fill();
 
-      context.font="16px Helvetica";
-      var text = Math.round(power) + "W " + moment(from).format('MMM D, HH:mm:ss');;
-      var size = context.measureText(text);
-      var x = hover + 3;
-      y += 15;
-      if (x + size.width > canvas.width) x = canvas.width - size.width;
-      context.fillStyle = "black";
-      context.fillText(text, x, y);
+      if (Math.abs(y - hoverY) < 40) {
+        context.beginPath();
+        context.fillStyle = "#0000aa";
+        
+        context.arc(hoverX,y,4,0,2*Math.PI);
+        context.fill();
+
+        context.font="16px Helvetica";
+        var text = Math.round(power) + "W " + moment(from).format('MMM D, HH:mm:ss');;
+        var size = context.measureText(text);
+        var x = hoverX + 3;
+        y += 15;
+        if (x + size.width > canvas.width) x = canvas.width - size.width;
+        context.fillStyle = "black";
+        context.fillText(text, x, y);
+      }
     }
     
     context.beginPath();
     context.strokeStyle = "black";
     context.lineWidth = 1;
-    context.moveTo(0, canvas.height - baseLine);
-    context.lineTo(canvas.width, canvas.height - baseLine);
+    context.moveTo(margin, canvas.height - baseLine + 0.5);
+    context.lineTo(canvas.width - margin * 2, canvas.height - baseLine + 0.5);
     context.stroke();
   }
 
   function mousemove(event) {
-    hover = event.pageX - $(canvas).offset().left;
+    hoverX = event.pageX - $(canvas).offset().left;
+    hoverY = event.pageY - $(canvas).offset().top;
     drawChart();
   }
 
   function averagePower(from, to) {
-    var power = 0;
-    var powerCount = 0;
-    var closest = null;
-    var closestDist = 0;
-    $.each(lastPulses, function(i, p) {
-      var dist = Math.abs(p[0] - from);
-      if (closest == null || dist < closestDist) {
-        closest = p;
-        closestDist = dist;
+    var i = findClosest(lastPulses, from, 0, lastPulses.length);
+
+    if (lastPulses[i][0] >= from && lastPulses[i][0] <= to) {
+      var sum = 0;
+      var count = 0;
+      for(;lastPulses[i][0] <= to; ++i) {
+        sum += deltaToWatts(lastPulses[i][1]);
+        ++count;
       }
-      if (p[0] >= from && p[0] <= to) {
-        power += deltaToWatts(p[1]);
-        powerCount++;
-      }
-    });
-    if (powerCount > 0) return power / powerCount;
-    
-    if (closest != null && closestDist < 60*60*1000/5) {
-      return deltaToWatts(closest[1]);
+      return sum / count;
+    }
+
+    if (Math.abs(lastPulses[i][0] - from) < 60*60*1000/5) {
+      return deltaToWatts(lastPulses[i][1]);
     }
     return 0;
+
+    // var power = 0;
+    // var powerCount = 0;
+    // var closest = null;
+    // var closestDist = 0;
+    // $.each(lastPulses, function(i, p) {
+    //   var dist = Math.abs(p[0] - from);
+    //   if (closest == null || dist < closestDist) {
+    //     closest = p;
+    //     closestDist = dist;
+    //   }
+    //   if (p[0] >= from && p[0] <= to) {
+    //     power += deltaToWatts(p[1]);
+    //     powerCount++;
+    //   }
+    // });
+    // if (powerCount > 0) return power / powerCount;
+    
+    // if (closest != null && closestDist < 60*60*1000/5) {
+    //   return deltaToWatts(closest[1]);
+    // }
+    // return 0;
+  }
+
+  function findClosest(array, value, min, max) {
+    if (min + 1 >= max) return min;
+    var mid = Math.floor((min + max) / 2);
+    var midValue = array[mid][0];
+    if (value  < midValue) return findClosest(array, value, min, mid);
+    return findClosest(array, value, mid, max);
   }
 
   function deltaToWatts(delta) {
