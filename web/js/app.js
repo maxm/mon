@@ -13,7 +13,8 @@
   var context = null;
 
   var baseLine = 50;
-  var margin = 10;
+  var marginSides = 10;
+  var marginTop = 50;
 
   var hoverX = 0;
   var hoverY = 0;
@@ -46,7 +47,7 @@
     if (lastPulses.length > 2) {
       var lastPulse = lastPulses[lastPulses.length-1];
       var watts = deltaToWatts(lastPulse[1])
-      $('#wattsNow').text(watts.toString())
+      $('#wattsNow').text(watts.toString() + "W")
       var now = new Date().getTime();
       var seconds = (now - lastPulse[0]) / 1000;
       if (seconds < 45) {
@@ -99,8 +100,8 @@
       var from = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * i / segments;
       var to = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * (i + 1) / segments;
       var y = averagePower(from, to) / max;
-      x = Math.round(x * (canvas.width - margin*2) + margin) + 0.5;
-      y = Math.round(canvas.height - y*(canvas.height - baseLine) - baseLine) + 0.5;
+      x = Math.round(x * (canvas.width - marginSides*2) + marginSides) + 0.5;
+      y = Math.round(canvas.height - y*(canvas.height - baseLine - marginTop) - baseLine) + 0.5;
       if (i == 0) {
         context.moveTo(x,y); 
       } else {
@@ -109,24 +110,38 @@
     };
     context.stroke();
 
-    if (hoverX > 0) {
-      var from = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * hoverX / canvas.width;
+    if (hoverX > marginSides) {
+      var from = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * (hoverX - marginSides) / (canvas.width - marginSides*2);
       var power = averagePower(from, from + pollPulseMillis / segments);
-      var y = canvas.height - power/max*(canvas.height - baseLine) - baseLine;
+      var y = power/max;
+      y = Math.round(canvas.height - y*(canvas.height - baseLine - marginTop) - baseLine) + 0.5;
 
       if (Math.abs(y - hoverY) < 40) {
-        context.beginPath();
-        context.fillStyle = "#0000aa";
-        
-        context.arc(hoverX,y,4,0,2*Math.PI);
-        context.fill();
-
-        context.font="16px Helvetica";
+        context.font="15px Helvetica";
         var text = Math.round(power) + "W " + moment(from).format('MMM D, HH:mm:ss');;
         var size = context.measureText(text);
+        
+        context.beginPath();
+        context.strokeStyle = "#777"
+        context.moveTo(hoverX, y + 0.5);
+        context.lineTo(hoverX, y-5.5);
+        context.lineTo(hoverX + size.width / 2 + 2, y-5.5);
+        context.lineTo(hoverX - size.width / 2 - 2, y-5.5);
+        context.stroke();
+
+        context.beginPath();
+        context.fillStyle = "#0000aa";
+        context.arc(hoverX,y,2,0,2*Math.PI);
+        context.fill();
+        
         var x = hoverX + 3;
-        y += 15;
+        y -= 12;
+        x -= Math.round(size.width / 2) + 3;
         if (x + size.width > canvas.width) x = canvas.width - size.width;
+        
+        context.fillStyle = "rgba(255,255,255,0.9)"
+        context.fillRect(x-2, y - 17, size.width+4, 24);
+
         context.fillStyle = "black";
         context.fillText(text, x, y);
       }
@@ -135,8 +150,8 @@
     context.beginPath();
     context.strokeStyle = "black";
     context.lineWidth = 1;
-    context.moveTo(margin, canvas.height - baseLine + 0.5);
-    context.lineTo(canvas.width - margin * 2, canvas.height - baseLine + 0.5);
+    context.moveTo(marginSides, canvas.height - baseLine + 0.5);
+    context.lineTo(canvas.width - marginSides * 2, canvas.height - baseLine + 0.5);
     context.stroke();
   }
 
