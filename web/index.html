@@ -2,22 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Power log</title>
+    <title>Mon</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
     <script src="js/moment.min.js"></script>
     <script src="js/app.js"></script>
   </head>
   <body>
-    <h1>Power log</h1>
+    <h1>Mon</h1>
     <div id='wattsNowContainer'><p><span id='wattsNow'></span><span id='wattsNowTime'></span></p></div>
     <canvas id="canvas" height="600"></canvas>
     <div class="controls">
       <ul>
-        <li><a onclick="setPulseHourSpan(3);" href="#">3h</a> 
+        <li><a onclick="setPulseHourSpan(1);" href="#">1h</a> 
         <li><a onclick="setPulseHourSpan(6);" href="#">6h</a>
         <li><a onclick="setPulseHourSpan(12);" href="#">12h</a>
         <li><a onclick="setPulseHourSpan(24);" href="#">24h</a>
+        <li><a onclick="setPulseHourSpan(24*7);" href="#">7d</a>
       </ul>
       <ul>
         <li><a onclick="movePulseEndDays(-1);" href="#">-1 day</a> 

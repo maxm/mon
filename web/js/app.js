@@ -19,6 +19,9 @@
   var hoverX = 0;
   var hoverY = 0;
 
+  var selectionStart = 0;
+  var selectionEnd = 0;
+
   $(document).ready(function() {
     canvas = document.getElementById("canvas");
     context = canvas.getContext("2d");
@@ -86,19 +89,51 @@
     context.fillStyle="#eee";
     context.fillRect(0,0,canvas.width,canvas.height);
 
+    var startX = (pollPulseEnd - pollPulseMillis);
+    var endX = pollPulseEnd;
+    var deltaX = pollPulseMillis;
+
     var max = 0;
     $.each(lastPulses, function(i, p) {
       max = Math.max(max, deltaToWatts(p[1]));
     })
 
+    var timeLines = [1000*60, 
+                     1000*60*5, 
+                     1000*60*15, 
+                     1000*60*30, 
+                     1000*60*60, 
+                     1000*60*60*2, 
+                     1000*60*60*4, 
+                     1000*60*60*8,
+                     1000*60*60*12,
+                     1000*60*60*24,
+                     1000*60*60*24*7];
+    for (var i = 0; i<timeLines.length; ++i) {
+      if ((endX - startX) / timeLines[i] < 8) {
+        drawVerticalLines(timeLines[i], startX, endX, "#666")
+        break;
+      }
+    }
+    var wattLines = [10, 20, 50, 100, 250, 500, 1000];
+    for (var i = 0; i<wattLines.length; ++i) {
+      if (max / wattLines[i] < 6) {
+        drawHorizontalLines(wattLines[i], 0, max, "#666");
+        break;
+      }  
+    }
+    
+
+    if (context.setLineDash) context.setLineDash([]);
+
     context.beginPath();
     context.strokeStyle = "#0000aa";
-    context.lineWidth = 1.5;
+    context.lineWidth = 1.2;
     var segments = canvas.width / 2;
     for (var i = 0; i < segments; ++i) {
       var x = i / segments;
-      var from = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * i / segments;
-      var to = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * (i + 1) / segments;
+      var from = startX + deltaX * i / segments;
+      var to = startX + deltaX * (i + 1) / segments;
       var y = averagePower(from, to) / max;
       x = Math.round(x * (canvas.width - marginSides*2) + marginSides) + 0.5;
       y = Math.round(canvas.height - y*(canvas.height - baseLine - marginTop) - baseLine) + 0.5;
@@ -111,8 +146,8 @@
     context.stroke();
 
     if (hoverX > marginSides) {
-      var from = (pollPulseEnd - pollPulseMillis) + pollPulseMillis * (hoverX - marginSides) / (canvas.width - marginSides*2);
-      var power = averagePower(from, from + pollPulseMillis / segments);
+      var from = startX + deltaX * (hoverX - marginSides) / (canvas.width - marginSides*2);
+      var power = averagePower(from, from + deltaX / segments);
       var y = power/max;
       y = Math.round(canvas.height - y*(canvas.height - baseLine - marginTop) - baseLine) + 0.5;
 
@@ -122,7 +157,7 @@
         var size = context.measureText(text);
         
         context.beginPath();
-        context.strokeStyle = "#777"
+        context.strokeStyle = "#999"
         context.moveTo(hoverX, y + 0.5);
         context.lineTo(hoverX, y-5.5);
         context.lineTo(hoverX + size.width / 2 + 2, y-5.5);
@@ -153,6 +188,56 @@
     context.moveTo(marginSides, canvas.height - baseLine + 0.5);
     context.lineTo(canvas.width - marginSides * 2, canvas.height - baseLine + 0.5);
     context.stroke();
+
+    if (selectionEnd > selectionStart) {
+      
+    }
+  }
+
+  function drawVerticalLines(modulo, startT, endT, color) {
+    for (var t = moment(startT).startOf('day').valueOf(); t < endT; t += modulo) {
+      if (t > startT) {
+        var dayLimit = moment(t).isSame(moment(t).startOf('day')) 
+        if (context.setLineDash) context.setLineDash(dayLimit ? [] : [1]);
+        context.beginPath();
+        context.strokeStyle = color;
+        context.lineWidth = 1;
+        var x = (t-startT) / (endT-startT);
+        x = Math.round(x * (canvas.width - marginSides*2) + marginSides) + 0.5;
+        context.moveTo(x, canvas.height - baseLine);
+        context.lineTo(x, marginTop);
+        context.stroke();
+
+        context.font="12px Helvetica";
+        var text = moment(t).format(dayLimit ? 'MMM D' : 'MMM D, HH:mm');
+        var size = context.measureText(text);
+        context.fillStyle = color;
+        context.fillText(text, x - size.width/2, canvas.height - baseLine + 15);
+      }
+    }
+  }
+
+  function drawHorizontalLines(modulo, startW, endW, color) {
+    if (context.setLineDash) context.setLineDash([1]);
+    for (var w = startW - startW%modulo; w < endW; w += modulo) {
+      if (w > startW) {
+        var y = (w-startW) / (endW-startW);
+        y = Math.round(canvas.height - y*(canvas.height - baseLine - marginTop) - baseLine) + 0.5;
+
+        context.font="12px Helvetica";
+        var text = w + "W";
+        var size = context.measureText(text);
+        context.fillStyle = color;
+        context.fillText(text, marginSides/2, y + 3);
+
+        context.beginPath();
+        context.strokeStyle = color;
+        context.lineWidth = 1;
+        context.moveTo(canvas.width - marginSides, y);
+        context.lineTo(marginSides/2 + size.width + 3, y);
+        context.stroke();
+      }
+    }
   }
 
   function mousemove(event) {
@@ -162,6 +247,7 @@
   }
 
   function averagePower(from, to) {
+    if (lastPulses.length == 0) return 0;
     var i = findClosest(lastPulses, from, 0, lastPulses.length);
 
     if (lastPulses[i][0] >= from && lastPulses[i][0] <= to) {
