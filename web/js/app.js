@@ -178,28 +178,6 @@
       return deltaToWatts(lastPulses[i][1]);
     }
     return 0;
-
-    // var power = 0;
-    // var powerCount = 0;
-    // var closest = null;
-    // var closestDist = 0;
-    // $.each(lastPulses, function(i, p) {
-    //   var dist = Math.abs(p[0] - from);
-    //   if (closest == null || dist < closestDist) {
-    //     closest = p;
-    //     closestDist = dist;
-    //   }
-    //   if (p[0] >= from && p[0] <= to) {
-    //     power += deltaToWatts(p[1]);
-    //     powerCount++;
-    //   }
-    // });
-    // if (powerCount > 0) return power / powerCount;
-    
-    // if (closest != null && closestDist < 60*60*1000/5) {
-    //   return deltaToWatts(closest[1]);
-    // }
-    // return 0;
   }
 
   function findClosest(array, value, min, max) {
