@@ -12,9 +12,9 @@
   var canvas = null;
   var context = null;
 
-  var baseLine = 50;
+  var baseLine = 30;
   var marginSides = 10;
-  var marginTop = 50;
+  var marginTop = 0;
 
   var hoverX = 0;
   var hoverY = 0;
@@ -97,7 +97,7 @@
   }
 
   function drawChart() {
-    context.fillStyle="#eee";
+    context.fillStyle="#fff";
     context.fillRect(0,0,canvas.width,canvas.height);
 
     var startX = (pollPulseEnd - pollPulseMillis);

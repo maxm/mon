@@ -11,19 +11,19 @@
   <body>
     <h1>Power Log</h1>
     <div id='wattsNowContainer'><p><span id='wattsNow'></span><span id='wattsNowTime'></span></p></div>
-    <canvas id="canvas" height="600"></canvas>
+    <canvas id="canvas" height="400"></canvas>
     <div class="controls">
       <ul>
-        <li><a onclick="setPulseHourSpan(1);" href="#">1h</a> 
-        <li><a onclick="setPulseHourSpan(6);" href="#">6h</a>
-        <li><a onclick="setPulseHourSpan(12);" href="#">12h</a>
-        <li><a onclick="setPulseHourSpan(24);" href="#">24h</a>
-        <li><a onclick="setPulseHourSpan(24*7);" href="#">7d</a>
-        <li><a onclick="setPulseHourSpan(24*60);" href="#">40d</a>
+        <li><button onclick="scroll(-1);" href="#">&lt;</button> 
+        <li><button onclick="scroll(1);" href="#">&gt;</button>
       </ul>
       <ul>
-        <li><a onclick="scroll(-1);" href="#">&lt;</a> 
-        <li><a onclick="scroll(1);" href="#">&gt;</a>
+        <li><button onclick="setPulseHourSpan(1);" href="#">1h</button> 
+        <li><button onclick="setPulseHourSpan(6);" href="#">6h</button>
+        <li><button onclick="setPulseHourSpan(12);" href="#">12h</button>
+        <li><button onclick="setPulseHourSpan(24);" href="#">24h</button>
+        <li><button onclick="setPulseHourSpan(24*7);" href="#">7d</button>
+        <li><button onclick="setPulseHourSpan(24*60);" href="#">40d</button>
       </ul>
     </div>
   </body>

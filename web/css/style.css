@@ -16,7 +16,7 @@ html, body {
 
 #wattsNow {
   margin-right: 10pt;
-  font-size: 150%;
+  font-size: 120%;
 }
 
 #wattsNowTime {
@@ -28,9 +28,13 @@ html, body {
 h1 {
   float: left;
   font-weight: normal;
-  font-size: 200%;
+  font-size: 120%;
   margin-left: 50pt;
   margin-top: 0;
+}
+
+.controls {
+  text-align: center;
 }
 
 .controls ul {
@@ -42,4 +46,10 @@ h1 {
   display: inline;
   list-style-type: none;
   padding-right: 20px;
+}
+
+.controls button {
+  height: 35px;
+  width: 80px;
+  font-size: 100%;
 }
