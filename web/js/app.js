@@ -26,13 +26,6 @@
     canvas = document.getElementById("canvas");
     context = canvas.getContext("2d");
 
-    $(canvas).mousemove(mousemove)
-    document.addEventListener('touchdown', function(e) {
-        e.preventDefault();
-        var touch = e.touches[0];
-        mousemove(touch);
-    }, false);
-
     $( window ).resize(function() {
       resizeChart();
       drawChart();
@@ -41,9 +34,38 @@
 
     pollPulseEnd = new Date().getTime();
     
-    setPulseHourSpan(6);
+    setPulseHourSpan(24);
     pollPulses();
     updateNow();
+
+    var mouseDownStart = null;
+    $(canvas).mousedown(function(event) {
+      mouseDownStart = event.pageX - $(canvas).offset().left;
+    })
+    $(canvas).mousemove(function(event) {
+      hoverX = event.pageX - $(canvas).offset().left;
+      hoverY = event.pageY - $(canvas).offset().top;
+      
+      if (mouseDownStart != null) {
+        if (mouseDownStart > hoverX) {
+          selectionStart = hoverX;
+          selectionEnd = mouseDownStart;
+        } else {
+          selectionStart = mouseDownStart;;
+          selectionEnd = hoverX
+        }
+      }
+
+      drawChart();
+    })
+    $(canvas).mouseup(function(event) {
+      mouseDownStart = null;
+    });
+    document.addEventListener('touchdown', function(e) {
+        e.preventDefault();
+        var touch = e.touches[0];
+        mousemove(touch);
+    }, false);
   });
 
   function updateNow() {
@@ -108,9 +130,10 @@
                      1000*60*60*8,
                      1000*60*60*12,
                      1000*60*60*24,
-                     1000*60*60*24*7];
+                     1000*60*60*24*7,
+                     1000*60*60*24*14];
     for (var i = 0; i<timeLines.length; ++i) {
-      if ((endX - startX) / timeLines[i] < 8) {
+      if ((endX - startX) / timeLines[i] < 10) {
         drawVerticalLines(timeLines[i], startX, endX, "#666")
         break;
       }
@@ -123,7 +146,6 @@
       }  
     }
     
-
     if (context.setLineDash) context.setLineDash([]);
 
     context.beginPath();
@@ -146,14 +168,14 @@
     context.stroke();
 
     if (hoverX > marginSides) {
-      var from = startX + deltaX * (hoverX - marginSides) / (canvas.width - marginSides*2);
+      var from = timeFromX(startX, endX, hoverX);
       var power = averagePower(from, from + deltaX / segments);
       var y = power/max;
       y = Math.round(canvas.height - y*(canvas.height - baseLine - marginTop) - baseLine) + 0.5;
 
       if (Math.abs(y - hoverY) < 40) {
         context.font="15px Helvetica";
-        var text = Math.round(power) + "W " + moment(from).format('MMM D, HH:mm:ss');;
+        var text = Math.round(power) + "W " + moment(from).format('MMM D, HH:mm:ss');
         var size = context.measureText(text);
         
         context.beginPath();
@@ -190,7 +212,34 @@
     context.stroke();
 
     if (selectionEnd > selectionStart) {
+      context.globalAlpha = 0.1;
+      context.fillStyle="blue";
+      context.fillRect(selectionStart,0,selectionEnd - selectionStart,canvas.height);
+      context.globalAlpha = 1;
+
+      context.font="15px Helvetica";
+      context.fillStyle="black";
+      var from = timeFromX(startX, endX, selectionStart);
+      var to = timeFromX(startX, endX, selectionEnd);
+      var Wh = countWh(from, to);
+      var duration = moment.duration(to - from);
+
+      var midSelection = (selectionStart + selectionEnd) / 2;
+
+      var text = Wh + "Wh";
+      var size = context.measureText(text);
+      context.fillText(text, midSelection - size.width / 2, canvas.height / 2 - 20);
       
+      text = (duration.asDays() >= 1 ? Math.floor(duration.asDays()) + "d" : "") + 
+             (duration.hours() > 0 ? duration.hours() + "h" : "") + 
+             (duration.minutes() > 0 ? duration.minutes() + "m" : "") + 
+             (duration.asDays() >= 1 ? "" : duration.seconds() + "s");
+      size = context.measureText(text);
+      context.fillText(text, midSelection - size.width / 2, canvas.height / 2);
+
+      text = Math.round(Wh/duration.asHours()) + "W";
+      size = context.measureText(text);
+      context.fillText(text, midSelection - size.width / 2, canvas.height / 2 + 20)
     }
   }
 
@@ -240,30 +289,39 @@
     }
   }
 
-  function mousemove(event) {
-    hoverX = event.pageX - $(canvas).offset().left;
-    hoverY = event.pageY - $(canvas).offset().top;
-    drawChart();
+  function timeFromX(startX, endX, x) {
+    return Math.round(startX + (endX - startX) * (x - marginSides) / (canvas.width - marginSides*2));
   }
 
   function averagePower(from, to) {
     if (lastPulses.length == 0) return 0;
     var i = findClosest(lastPulses, from, 0, lastPulses.length);
-
-    if (lastPulses[i][0] >= from && lastPulses[i][0] <= to) {
-      var sum = 0;
-      var count = 0;
-      for(;lastPulses[i][0] <= to; ++i) {
+    var sum = 0;
+    var count = 0;
+    for(;i < lastPulses.length && lastPulses[i][0] <= to; ++i) {
+      if (lastPulses[i][0] >= from) {
         sum += deltaToWatts(lastPulses[i][1]);
         ++count;
       }
+    }
+    if (count > 0) {
       return sum / count;
     }
-
+    
     if (Math.abs(lastPulses[i][0] - from) < 60*60*1000/5) {
       return deltaToWatts(lastPulses[i][1]);
     }
     return 0;
+  }
+
+  function countWh(from, to) {
+    if (lastPulses.length == 0) return 0;
+    var i = findClosest(lastPulses, from, 0, lastPulses.length);
+    var count = 0;
+    for(;i < lastPulses.length && lastPulses[i][0] <= to; ++i) {
+      ++count;
+    }
+    return count;
   }
 
   function findClosest(array, value, min, max) {
@@ -291,13 +349,13 @@
     return false;
   }
 
-  movePulseEndDays = function(days) {
+  scroll = function(pages) {
     if (pollPulseEnd == null) {
       pollPulseEnd = new Date().getTime();
     }
-    pollPulseEnd += days * 24*60*60*1000;
+    pollPulseEnd += pages * pollPulseMillis;
     if (pollPulseEnd > new Date().getTime()) {
-      pollPulseEnd = null;
+      pollPulseEnd = new Date().getTime();
     }
     pollPulses();
     return false;
