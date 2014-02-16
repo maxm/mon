@@ -1,0 +1,7 @@
+server {
+    listen 80;
+    location /mon/ {
+	rewrite /mon/(.*) /$1 break;
+     	proxy_pass http://localhost:8080;
+    }
+}
