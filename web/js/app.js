@@ -73,18 +73,7 @@
       var lastPulse = lastPulses[lastPulses.length-1];
       var watts = deltaToWatts(lastPulse[1])
       $('#wattsNow').text(watts.toString() + "W")
-      var now = new Date().getTime();
-      var seconds = (now - lastPulse[0]) / 1000;
-      if (seconds < 45) {
-        $('#wattsNowTime').text("seconds ago")
-      } else {
-        var minutes = Math.round(seconds / 60);
-        if (minutes == 1) {
-          $('#wattsNowTime').text("one minute ago")  
-        } else {
-          $('#wattsNowTime').text(minutes + " minutes ago")
-        }
-      }
+      $('#wattsNowTime').text(moment(lastPulse[0]).fromNow())
     }
     setTimeout(updateNow, 5000);
   }
@@ -295,10 +284,11 @@
 
   function averagePower(from, to) {
     if (lastPulses.length == 0) return 0;
-    var i = findClosest(lastPulses, from, 0, lastPulses.length);
+    var closest = findClosest(lastPulses, from, 0, lastPulses.length);
+    
     var sum = 0;
     var count = 0;
-    for(;i < lastPulses.length && lastPulses[i][0] <= to; ++i) {
+    for(var i = closest; i < lastPulses.length && lastPulses[i][0] <= to; ++i) {
       if (lastPulses[i][0] >= from) {
         sum += deltaToWatts(lastPulses[i][1]);
         ++count;
@@ -308,8 +298,8 @@
       return sum / count;
     }
     
-    if (Math.abs(lastPulses[i][0] - from) < 60*60*1000/5) {
-      return deltaToWatts(lastPulses[i][1]);
+    if (Math.abs(lastPulses[closest][0] - from) < 60*60*1000/5) {
+      return deltaToWatts(lastPulses[closest][1]);
     }
     return 0;
   }
