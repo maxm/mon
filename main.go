@@ -10,6 +10,9 @@ import (
   "fmt"
   "os"
   "github.com/gorilla/mux"
+  "compress/gzip"
+  "io"
+  "strings"
 )
 
 type Configuration struct {
@@ -21,6 +24,29 @@ type Configuration struct {
 
 var conf Configuration
 var db *sql.DB
+
+type gzipResponseWriter struct {
+  io.Writer
+  http.ResponseWriter
+}
+ 
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+  return w.Writer.Write(b)
+}
+ 
+func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
+  return func(w http.ResponseWriter, r *http.Request) {
+    if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+      fn(w, r)
+      return
+    }
+    w.Header().Set("Content-Encoding", "gzip")
+    gz := gzip.NewWriter(w)
+    defer gz.Close()
+    gzr := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+    fn(gzr, r)
+  }
+}
 
 func formInt(w http.ResponseWriter, r *http.Request, name string) (int64, error) {
   r.ParseForm()
@@ -92,6 +118,7 @@ func queryRange(w http.ResponseWriter, r *http.Request) {
     return
   }
   
+  w.Header()["Content-Type"] = []string{"application/json"}
   w.Header()["Access-Control-Allow-Origin"] = []string{"*"}
   fmt.Fprint(w, "[")
   for i:=0; rows.Next(); i++ {
@@ -152,7 +179,7 @@ func main() {
 
   router := mux.NewRouter()
   router.HandleFunc("/feed", post).Methods("POST")
-  router.HandleFunc("/feed", queryRange).Methods("GET")
+  router.HandleFunc("/feed", makeGzipHandler(queryRange)).Methods("GET")
   http.Handle("/feed", router)
   http.Handle("/", http.FileServer(http.Dir("web")))
   http.ListenAndServe(":8080", nil)
