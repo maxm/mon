@@ -10,6 +10,7 @@
   var pollTimer = null
 
   var canvas = null;
+  var canvasWidth = 1000, canvasHeight = 400;
   var context = null;
 
   var baseLine = 30;
@@ -92,13 +93,17 @@
   }
 
   function resizeChart() {
-    canvas.width  = window.innerWidth;
-    canvas.style.width = canvas.width + "px"
+    canvasWidth = window.innerWidth;
+    canvas.width  = canvasWidth * 2;
+    canvas.height  = canvasHeight * 2;
+    canvas.style.width = canvasWidth + "px";
+    canvas.style.height = canvasHeight + "px";
+    context.scale(2,2);
   }
 
   function drawChart() {
     context.fillStyle="#fff";
-    context.fillRect(0,0,canvas.width,canvas.height);
+    context.fillRect(0, 0, canvasWidth , canvasHeight);
 
     var startX = (pollPulseEnd - pollPulseMillis);
     var endX = pollPulseEnd;
@@ -140,14 +145,14 @@
     context.beginPath();
     context.strokeStyle = "#0000aa";
     context.lineWidth = 1.2;
-    var segments = canvas.width / 2;
+    var segments = canvasWidth / 2;
     for (var i = 0; i < segments; ++i) {
       var x = i / segments;
       var from = startX + deltaX * i / segments;
       var to = startX + deltaX * (i + 1) / segments;
       var y = averagePower(from, to) / max;
-      x = Math.round(x * (canvas.width - marginSides*2) + marginSides) + 0.5;
-      y = Math.round(canvas.height - y*(canvas.height - baseLine - marginTop) - baseLine) + 0.5;
+      x = Math.round(x * (canvasWidth - marginSides*2) + marginSides) + 0.5;
+      y = Math.round(canvasHeight - y*(canvasHeight - baseLine - marginTop) - baseLine) + 0.5;
       if (i == 0) {
         context.moveTo(x,y); 
       } else {
@@ -160,7 +165,7 @@
       var from = timeFromX(startX, endX, hoverX);
       var power = averagePower(from, from + deltaX / segments);
       var y = power/max;
-      y = Math.round(canvas.height - y*(canvas.height - baseLine - marginTop) - baseLine) + 0.5;
+      y = Math.round(canvasHeight - y*(canvasHeight - baseLine - marginTop) - baseLine) + 0.5;
 
       if (Math.abs(y - hoverY) < 40) {
         context.font="15px Helvetica";
@@ -183,7 +188,7 @@
         var x = hoverX + 3;
         y -= 12;
         x -= Math.round(size.width / 2) + 3;
-        if (x + size.width > canvas.width) x = canvas.width - size.width;
+        if (x + size.width > canvasWidth) x = canvasWidth - size.width;
         
         context.fillStyle = "rgba(255,255,255,0.9)"
         context.fillRect(x-2, y - 17, size.width+4, 24);
@@ -196,14 +201,14 @@
     context.beginPath();
     context.strokeStyle = "black";
     context.lineWidth = 1;
-    context.moveTo(marginSides, canvas.height - baseLine + 0.5);
-    context.lineTo(canvas.width - marginSides * 2, canvas.height - baseLine + 0.5);
+    context.moveTo(marginSides, canvasHeight - baseLine + 0.5);
+    context.lineTo(canvasWidth - marginSides * 2, canvasHeight - baseLine + 0.5);
     context.stroke();
 
     if (selectionEnd > selectionStart) {
       context.globalAlpha = 0.1;
       context.fillStyle="blue";
-      context.fillRect(selectionStart,0,selectionEnd - selectionStart,canvas.height);
+      context.fillRect(selectionStart,0,selectionEnd - selectionStart,canvasHeight);
       context.globalAlpha = 1;
 
       context.font="15px Helvetica";
@@ -217,18 +222,18 @@
 
       var text = Wh + "Wh";
       var size = context.measureText(text);
-      context.fillText(text, midSelection - size.width / 2, canvas.height / 2 - 20);
+      context.fillText(text, midSelection - size.width / 2, canvasHeight / 2 - 20);
       
       text = (duration.asDays() >= 1 ? Math.floor(duration.asDays()) + "d" : "") + 
              (duration.hours() > 0 ? duration.hours() + "h" : "") + 
              (duration.minutes() > 0 ? duration.minutes() + "m" : "") + 
              (duration.asDays() >= 1 ? "" : duration.seconds() + "s");
       size = context.measureText(text);
-      context.fillText(text, midSelection - size.width / 2, canvas.height / 2);
+      context.fillText(text, midSelection - size.width / 2, canvasHeight / 2);
 
       text = Math.round(Wh/duration.asHours()) + "W";
       size = context.measureText(text);
-      context.fillText(text, midSelection - size.width / 2, canvas.height / 2 + 20)
+      context.fillText(text, midSelection - size.width / 2, canvasHeight / 2 + 20)
     }
   }
 
@@ -241,8 +246,8 @@
         context.strokeStyle = color;
         context.lineWidth = 1;
         var x = (t-startT) / (endT-startT);
-        x = Math.round(x * (canvas.width - marginSides*2) + marginSides) + 0.5;
-        context.moveTo(x, canvas.height - baseLine);
+        x = Math.round(x * (canvasWidth - marginSides*2) + marginSides) + 0.5;
+        context.moveTo(x, canvasHeight - baseLine);
         context.lineTo(x, marginTop);
         context.stroke();
 
@@ -250,7 +255,7 @@
         var text = moment(t).format(dayLimit ? 'MMM D' : 'MMM D, HH:mm');
         var size = context.measureText(text);
         context.fillStyle = color;
-        context.fillText(text, x - size.width/2, canvas.height - baseLine + 15);
+        context.fillText(text, x - size.width/2, canvasHeight - baseLine + 15);
       }
     }
   }
@@ -260,7 +265,7 @@
     for (var w = startW - startW%modulo; w < endW; w += modulo) {
       if (w > startW) {
         var y = (w-startW) / (endW-startW);
-        y = Math.round(canvas.height - y*(canvas.height - baseLine - marginTop) - baseLine) + 0.5;
+        y = Math.round(canvasHeight - y*(canvasHeight - baseLine - marginTop) - baseLine) + 0.5;
 
         context.font="12px Helvetica";
         var text = w + "W";
@@ -271,7 +276,7 @@
         context.beginPath();
         context.strokeStyle = color;
         context.lineWidth = 1;
-        context.moveTo(canvas.width - marginSides, y);
+        context.moveTo(canvasWidth - marginSides, y);
         context.lineTo(marginSides/2 + size.width + 3, y);
         context.stroke();
       }
@@ -279,7 +284,7 @@
   }
 
   function timeFromX(startX, endX, x) {
-    return Math.round(startX + (endX - startX) * (x - marginSides) / (canvas.width - marginSides*2));
+    return Math.round(startX + (endX - startX) * (x - marginSides) / (canvasWidth - marginSides*2));
   }
 
   function averagePower(from, to) {
