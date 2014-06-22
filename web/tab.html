@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="refresh" content="120">
+    <title>Power Log</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="js/moment.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+      $(document).ready(function() {
+        setPulseHourSpan(2);
+      });
+    </script>
+  </head>
+  <body class="tab">
+    <h1>Home</h1>
+    <canvas id="canvas" height="400"></canvas>
+    <div id='wattsNowContainer'><p><span id='wattsNow'></span><span id='wattsNowTime'></span></p></div>
+  </body>
+</html>
