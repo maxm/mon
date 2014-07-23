@@ -2,7 +2,6 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="refresh" content="120">
     <title>Power Log</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
@@ -10,13 +9,19 @@
     <script src="js/app.js"></script>
     <script>
       $(document).ready(function() {
+        pollPulseUpdate = 15000;
         setPulseHourSpan(2);
+        updateClock();
       });
+      function updateClock() {
+        $('#clock').text(moment().zone(timezone).format('HH:mm'));
+        setTimeout(updateClock, 60000);
+      }
     </script>
   </head>
   <body class="tab">
-    <h1>Home</h1>
-    <canvas id="canvas" height="400"></canvas>
     <div id='wattsNowContainer'><p><span id='wattsNow'></span><span id='wattsNowTime'></span></p></div>
+    <div id="clock">01:13</div>
+    <canvas id="canvas" height="300"></canvas>
   </body>
 </html>

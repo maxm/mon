@@ -1,0 +1,1 @@
+scp -r web/ root@server.max.uy:/var/www/mon/

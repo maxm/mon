@@ -1,4 +1,6 @@
 (function() {
+  pollPulseUpdate = 0
+  timezone = "-0300"
 
   var pollPulsesHours = 0
   var pollPulseMillis = 0
@@ -86,10 +88,12 @@
       lastPulses = data;
       drawChart();
       updateNow();
-      if (pollPulseEnd == null) {
-        pollTimer = setTimeout(pollPulses, 2000);
+    }, "json").always(function() {
+      if (pollPulseUpdate > 0) {
+        pollTimer = setTimeout(pollPulses, pollPulseUpdate);
+        pollPulseEnd = new Date().getTime();
       }
-    }, "json");
+    });
   }
 
   function resizeChart() {
@@ -127,7 +131,7 @@
                      1000*60*60*24*7,
                      1000*60*60*24*14];
     for (var i = 0; i<timeLines.length; ++i) {
-      if ((endX - startX) / timeLines[i] < 10) {
+      if ((endX - startX) / timeLines[i] < 5) {
         drawVerticalLines(timeLines[i], startX, endX, "#666")
         break;
       }
@@ -240,7 +244,7 @@
   function drawVerticalLines(modulo, startT, endT, color) {
     for (var t = moment(startT).startOf('day').valueOf(); t < endT; t += modulo) {
       if (t > startT) {
-        var dayLimit = moment(t).isSame(moment(t).startOf('day')) 
+        var dayLimit = moment(t).isSame(moment(t).zone(timezone).startOf('day')) 
         if (context.setLineDash) context.setLineDash(dayLimit ? [] : [1]);
         context.beginPath();
         context.strokeStyle = color;
@@ -251,8 +255,8 @@
         context.lineTo(x, marginTop);
         context.stroke();
 
-        context.font="12px Helvetica";
-        var text = moment(t).format(dayLimit ? 'MMM D' : 'MMM D, HH:mm');
+        context.font="14px Helvetica";
+        var text = moment(t).zone(timezone).format(dayLimit ? 'MMM D' : 'MMM D, HH:mm');
         var size = context.measureText(text);
         context.fillStyle = color;
         context.fillText(text, x - size.width/2, canvasHeight - baseLine + 15);
@@ -267,7 +271,7 @@
         var y = (w-startW) / (endW-startW);
         y = Math.round(canvasHeight - y*(canvasHeight - baseLine - marginTop) - baseLine) + 0.5;
 
-        context.font="12px Helvetica";
+        context.font="18px Helvetica";
         var text = w + "W";
         var size = context.measureText(text);
         context.fillStyle = color;
