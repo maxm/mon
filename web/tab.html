@@ -14,7 +14,7 @@
         updateClock();
       });
       function updateClock() {
-        $('#clock').text(moment().zone(timezone).format('HH:mm'));
+        $('#clock').text(moment().format('HH:mm'));
         setTimeout(updateClock, 60000);
       }
     </script>

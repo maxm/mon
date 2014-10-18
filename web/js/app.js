@@ -1,6 +1,5 @@
 (function() {
   pollPulseUpdate = 0
-  timezone = "-0300"
 
   var pollPulsesHours = 0
   var pollPulseMillis = 0
@@ -244,7 +243,7 @@
   function drawVerticalLines(modulo, startT, endT, color) {
     for (var t = moment(startT).startOf('day').valueOf(); t < endT; t += modulo) {
       if (t > startT) {
-        var dayLimit = moment(t).isSame(moment(t).zone(timezone).startOf('day')) 
+        var dayLimit = moment(t).isSame(moment(t).startOf('day'))
         if (context.setLineDash) context.setLineDash(dayLimit ? [] : [1]);
         context.beginPath();
         context.strokeStyle = color;
@@ -256,7 +255,7 @@
         context.stroke();
 
         context.font="14px Helvetica";
-        var text = moment(t).zone(timezone).format(dayLimit ? 'MMM D' : 'MMM D, HH:mm');
+        var text = moment(t).format(dayLimit ? 'MMM D' : 'MMM D, HH:mm');
         var size = context.measureText(text);
         context.fillStyle = color;
         context.fillText(text, x - size.width/2, canvasHeight - baseLine + 15);
