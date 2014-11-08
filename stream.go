@@ -11,6 +11,7 @@ import (
 
 func handleConnection(conn net.Conn) {
   Log("Stream connection from %v", conn.RemoteAddr())
+  defer conn.Close()
   
   connbuf := bufio.NewReader(conn)
   var name string = ""
@@ -20,14 +21,17 @@ func handleConnection(conn net.Conn) {
       if err != nil { break }
       line = strings.TrimSpace(line)
       
-      if !authorized && line != Conf.ApiKey {
-        Log("Unauthorized connection")
-        break
-      } else {
-        authorized = true
-        continue
+      if !authorized {
+        if line == Conf.ApiKey {
+          Log("Connection authorized")
+          authorized = true
+          continue
+        } else {
+          Log("Connection NOT authorized")
+          break
+        }
       }
-
+      
       if line[0] == '#' {
         name = line[1:]
         Log("Getting stream of values for %v", name)

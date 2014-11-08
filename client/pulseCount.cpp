@@ -2,9 +2,8 @@
 #include "pitches.h"
 
 const int pulsePin = D6;
-
-int ringButtonPin = D4;
-int ringSpeakerPin = A1;
+const int ringButtonPin = D4;
+const int ringSpeakerPin = A1;
 
 unsigned long lastPulse = 0;
 int previous = LOW;
@@ -15,6 +14,27 @@ unsigned long countStart = 0;
 int notes[] = {NOTE_E6, NOTE_G6, NOTE_E7, NOTE_C7, NOTE_D7, NOTE_G7};
 int noteCount = 6;
 unsigned long lastRing = 0;
+
+TCPClient client;
+const char* server = "server.max.uy";
+int port = 9002;
+const char* apiKey = "FILL API KEY BEFORE FLASH";
+unsigned long nextConnectionRetry = 0;
+unsigned long connectionRetryInterval = 2*60*1000; // 2 minutes
+
+const char* power_tag = "power";
+const char* ring_tag = "ring";
+const char* last_tag = 0;
+
+void clientSend(const char* tag, long value) {
+  if (!client.connected()) return;
+  if (tag != last_tag) {
+    client.print("#");
+    client.println(tag);
+    last_tag = tag;
+  }
+  client.println(value);
+}
 
 void pollPulse() {
   int current = digitalRead(pulsePin);
@@ -35,7 +55,7 @@ void pollPulse() {
     if (lastPulse > 0) { 
       delta = now - lastPulse; 
     }
-    Serial.println(delta);
+    clientSend(power_tag, delta);
     lastPulse = now;
     ones = false;
   }
@@ -44,7 +64,7 @@ void pollPulse() {
 }
 
 int doRing(String command) {
-  Serial.println("ring");
+  clientSend(ring_tag, 1);
   lastRing = millis();
   for (int j = 0; j < 4; ++j) {
     for (int i = 0; i < noteCount; ++i) {
@@ -76,12 +96,17 @@ void setup() {
   pinMode(ringSpeakerPin, OUTPUT);
 
   Spark.function("ring", doRing);
-  
-  Serial.begin(9600);
-  Serial.println("start");
 }
 
 void loop() {
+  if (!client.connected() && millis() > nextConnectionRetry) {
+    if (!client.connect(server, port)) {
+      nextConnectionRetry = millis() + connectionRetryInterval;
+    } else {
+      client.println(apiKey);
+    }
+  }
+
   pollPulse();
   pollRing();
 }
