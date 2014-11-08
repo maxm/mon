@@ -337,6 +337,7 @@
   }
 
   function deltaToWatts(delta) {
+    if (delta == 0) return 0;
     return Math.round(60*60*1000/delta);
   }
 
