@@ -151,10 +151,6 @@ func post(w http.ResponseWriter, r *http.Request) {
   if err != nil { return }
 
   Post(name, time, value)
-
-  if name == "ring" {
-    go ringNotification()
-  }
 }
 
 func ringNotification() {
@@ -181,6 +177,10 @@ func Post(name string, time int64, value int64) {
   if err != nil {
     Log("Error inserting value %v", err)
     return
+  }
+
+  if name == "ring" {
+    ringNotification()
   }
 }
 
