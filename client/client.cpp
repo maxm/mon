@@ -1,5 +1,6 @@
 #include "application.h"
 #include "pitches.h"
+#include "api_key.h"
 
 const int pulsePin = D6;
 const int ringButtonPin = D4;
@@ -13,12 +14,12 @@ unsigned long countStart = 0;
 
 int notes[] = {NOTE_E6, NOTE_G6, NOTE_E7, NOTE_C7, NOTE_D7, NOTE_G7};
 int noteCount = 6;
-unsigned long lastRing = 0;
+unsigned long ringDownTime = 0;
+bool ring = false;
 
 TCPClient client;
 const char* server = "server.max.uy";
 int port = 9002;
-const char* apiKey = "FILL API KEY BEFORE FLASH";
 unsigned long nextConnectionRetry = 0;
 unsigned long connectionRetryInterval = 2*60*1000; // 2 minutes
 
@@ -65,8 +66,7 @@ void pollPulse() {
 
 int doRing(String command) {
   clientSend(ring_tag, 1);
-  lastRing = millis();
-  for (int j = 0; j < 4; ++j) {
+  for (int j = 0; j < 3; ++j) {
     for (int i = 0; i < noteCount; ++i) {
       tone(ringSpeakerPin, notes[i]+100*j, 200);
       delay(50);
@@ -75,16 +75,13 @@ int doRing(String command) {
   return 0;
 }
 
-void pollRing() {
-  if (millis() - lastRing < 1000) return;
-  
-  unsigned long start = millis();
-  while (millis() - start < 100) {
-    if (digitalRead(ringButtonPin) > 0) {
-      return;
-    }
+void ringButtonDown() {
+  ringDownTime = millis();
+}
+void ringButtonUp() {
+  if (millis() - ringDownTime > 100) {
+    ring = true;
   }
-  doRing("");
 }
 
 void setup() {
@@ -96,6 +93,9 @@ void setup() {
   pinMode(ringSpeakerPin, OUTPUT);
 
   Spark.function("ring", doRing);
+
+  attachInterrupt(ringButtonPin, ringButtonDown, RISING);
+  attachInterrupt(ringButtonPin, ringButtonUp, FALLING);
 }
 
 void loop() {
@@ -109,5 +109,8 @@ void loop() {
   }
 
   pollPulse();
-  pollRing();
+  if (ring) {
+    ring = false;
+    doRing("");
+  }
 }
