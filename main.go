@@ -14,6 +14,8 @@ import (
   "io"
   "strings"
   "time"
+  "net/url"
+  "bytes"
 )
 
 type Configuration struct {
@@ -149,6 +151,21 @@ func post(w http.ResponseWriter, r *http.Request) {
   if err != nil { return }
 
   Post(name, time, value)
+
+  if name == "ring" {
+    go ringNotification()
+  }
+}
+
+func ringNotification() {
+  data := url.Values{}
+  data.Set("token", PushoverToken)
+  data.Set("user", "uHmSdbUBTD9hk1JYK57uhKHWhTA4z6")
+  data.Set("message", "Ring!")
+
+  client := &http.Client{}
+  r, _ := http.NewRequest("POST", "http://api.pushover.net/1/messages.json", bytes.NewBufferString(data.Encode()))
+  client.Do(r)
 }
 
 func Post(name string, time int64, value int64) {
