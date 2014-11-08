@@ -11,10 +11,14 @@
       $(document).ready(function() {
         pollPulseUpdate = 15000;
         setPulseHourSpan(2);
+        timezone = parseInt(window.location.hash.substring(1));
         updateClock();
       });
       function updateClock() {
-        $('#clock').text(moment().format('HH:mm'));
+        var time = moment();
+        console.log(timezone)
+        if (timezone != null) time = time.zone(timezone)
+        $('#clock').text(time.format('HH:mm'));
         setTimeout(updateClock, 60000);
       }
     </script>

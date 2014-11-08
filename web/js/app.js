@@ -1,4 +1,6 @@
 (function() {
+  timezone = null
+
   pollPulseUpdate = 0
 
   var pollPulsesHours = 0
@@ -172,7 +174,9 @@
 
       if (Math.abs(y - hoverY) < 40) {
         context.font="15px Helvetica";
-        var text = Math.round(power) + "W " + moment(from).format('MMM D, HH:mm:ss');
+        var time = moment(from);
+        if (timezone != null) time = time.zone(timezone);
+        var text = Math.round(power) + "W " + time.format('MMM D, HH:mm:ss');
         var size = context.measureText(text);
         
         context.beginPath();
@@ -255,7 +259,9 @@
         context.stroke();
 
         context.font="14px Helvetica";
-        var text = moment(t).format(dayLimit ? 'MMM D' : 'MMM D, HH:mm');
+        var time = moment(t);
+        if (timezone != null) time = time.zone(timezone);
+        var text = time.format(dayLimit ? 'MMM D' : 'MMM D, HH:mm');
         var size = context.measureText(text);
         context.fillStyle = color;
         context.fillText(text, x - size.width/2, canvasHeight - baseLine + 15);
