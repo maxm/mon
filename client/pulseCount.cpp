@@ -103,6 +103,7 @@ void loop() {
     if (!client.connect(server, port)) {
       nextConnectionRetry = millis() + connectionRetryInterval;
     } else {
+      last_tag = 0;
       client.println(apiKey);
     }
   }

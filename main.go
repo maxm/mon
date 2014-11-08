@@ -54,7 +54,7 @@ func formInt(w http.ResponseWriter, r *http.Request, name string) (int64, error)
   s := r.Form[name]
   if len(s) == 0 {
     w.WriteHeader(http.StatusBadRequest)
-    fmt.Printf("Required parameter %v in %v\n", name, r)
+    Log("Required parameter %v in %v", name, r)
     return 0, errors.New("")
   }
   i,err := strconv.ParseInt(s[0], 10, 64)
@@ -67,7 +67,7 @@ func formString(w http.ResponseWriter, r *http.Request, name string) (string, er
   s := r.Form[name]
   if len(s) == 0 {
     w.WriteHeader(http.StatusBadRequest)
-    fmt.Printf("Required parameter %v in %v\n", name, r)
+    Log("Required parameter %v in %v", name, r)
     return "", errors.New("")
   }
   return s[0], nil
@@ -86,7 +86,7 @@ func authenticate(w http.ResponseWriter, r *http.Request) bool {
 func checkDB() bool {
   err := db.Ping()
   if err != nil {
-    fmt.Println("Can't connect to database " + err.Error())
+    Log("Can't connect to database " + err.Error())
     return false
   }
   return true
@@ -115,7 +115,7 @@ func queryRange(w http.ResponseWriter, r *http.Request) {
 
   rows, err := db.Query("SELECT time, value FROM " + name + " WHERE time >= ? AND time < ? ORDER BY time", from, to)
   if (err != nil) {
-    fmt.Println(err)
+    Log("%v", err)
     return
   }
   
@@ -133,7 +133,6 @@ func queryRange(w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, "]")
   }
   fmt.Fprint(w, "]")
-  fmt.Printf("range %v [%v, %v]\n", name, from, to)
 }
 
 func post(w http.ResponseWriter, r *http.Request) {
@@ -157,13 +156,13 @@ func Post(name string, time int64, value int64) {
 
   _, err := db.Exec("CREATE TABLE IF NOT EXISTS `" + name + "` ( `time` bigint UNIQUE, `value` int )")
   if err != nil {
-    fmt.Printf("Error creating table %v\n", err)
+    Log("Error creating table %v", err)
     return
   }
   
   _, err = db.Exec("INSERT INTO " + name + " (time, value) VALUES (?, ?)", time, value)
   if err != nil {
-    fmt.Printf("Error inserting value %v\n", err)
+    Log("Error inserting value %v", err)
     return
   }
 }
@@ -176,7 +175,7 @@ func Log(message string, a ...interface{}) {
 func main() {
   file, err := os.Open("conf.json")
   if err != nil {
-    fmt.Println(err)
+    Log("%v", err)
     return
   }
   decoder := json.NewDecoder(file)
