@@ -13,6 +13,7 @@ import (
   "compress/gzip"
   "io"
   "strings"
+  "time"
 )
 
 type Configuration struct {
@@ -22,7 +23,7 @@ type Configuration struct {
   ApiKey string
 }
 
-var conf Configuration
+var Conf Configuration
 var db *sql.DB
 
 type gzipResponseWriter struct {
@@ -75,7 +76,7 @@ func formString(w http.ResponseWriter, r *http.Request, name string) (string, er
 func authenticate(w http.ResponseWriter, r *http.Request) bool {
   apiKey, err := formString(w, r, "api")
   if err != nil { return false } 
-  if apiKey != conf.ApiKey {
+  if apiKey != Conf.ApiKey {
     w.WriteHeader(http.StatusUnauthorized)
     return false
   }
@@ -148,9 +149,13 @@ func post(w http.ResponseWriter, r *http.Request) {
   value, err := formInt(w, r, "value")
   if err != nil { return }
 
+  Post(name, time, value)
+}
+
+func Post(name string, time int64, value int64) {
   if !checkDB() { return }
 
-  _, err = db.Exec("CREATE TABLE IF NOT EXISTS `" + name + "` ( `time` bigint UNIQUE, `value` int )")
+  _, err := db.Exec("CREATE TABLE IF NOT EXISTS `" + name + "` ( `time` bigint UNIQUE, `value` int )")
   if err != nil {
     fmt.Printf("Error creating table %v\n", err)
     return
@@ -161,8 +166,11 @@ func post(w http.ResponseWriter, r *http.Request) {
     fmt.Printf("Error inserting value %v\n", err)
     return
   }
+}
 
-  fmt.Printf("insert %v %v %v\n", name, time, value)
+func Log(message string, a ...interface{}) {
+  message = fmt.Sprintf(message, a...)
+  fmt.Printf("%v %v\n", time.Now().Format(time.Stamp), message)
 }
 
 func main() {
@@ -172,15 +180,16 @@ func main() {
     return
   }
   decoder := json.NewDecoder(file)
-  decoder.Decode(&conf)
+  decoder.Decode(&Conf)
 
-  fmt.Printf("Connect database %v as %v\n", conf.DatabaseName, conf.DatabaseUser)
-  db, _ = sql.Open("mysql", conf.DatabaseUser+":"+conf.DatabasePassword+"@/"+conf.DatabaseName)
+  Log("Connect database %v as %v", Conf.DatabaseName, Conf.DatabaseUser)
+  db, _ = sql.Open("mysql", Conf.DatabaseUser+":"+Conf.DatabasePassword+"@/"+Conf.DatabaseName)
 
   router := mux.NewRouter()
   router.HandleFunc("/feed", post).Methods("POST")
   router.HandleFunc("/feed", makeGzipHandler(queryRange)).Methods("GET")
   http.Handle("/feed", router)
   http.Handle("/", http.FileServer(http.Dir("web")))
+  go StreamListen()
   http.ListenAndServe(":8080", nil)
 }
