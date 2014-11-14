@@ -16,6 +16,7 @@ int notes[] = {NOTE_E6, NOTE_G6, NOTE_E7, NOTE_C7, NOTE_D7, NOTE_G7};
 int noteCount = 6;
 unsigned long ringDownTime = 0;
 bool ring = false;
+unsigned long lastRing = 0;
 
 TCPClient client;
 const char* server = "server.max.uy";
@@ -111,6 +112,9 @@ void loop() {
   pollPulse();
   if (ring) {
     ring = false;
-    doRing("");
+    if (millis() - lastRing > 1000) {
+      lastRing = millis();
+      doRing("");
+    }
   }
 }
