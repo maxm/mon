@@ -1,7 +1,13 @@
 server {
-    listen 80;
+    location / {
+        root /var/www/max.uy;
+    }
     location /mon/ {
-	rewrite /mon/(.*) /$1 break;
+	    rewrite /mon/(.*) /$1 break;
      	proxy_pass http://localhost:8080;
+    }
+    location /calefon/ {
+      rewrite /calefon/(.*) /$1 break;
+      proxy_pass http://localhost:8081;
     }
 }

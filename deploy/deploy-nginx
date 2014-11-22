@@ -1,0 +1,4 @@
+scp deploy/nginx root@server.max.uy:/etc/nginx/sites-enabled/max.uy
+ssh server <<'ENDSSH'
+  service nginx restart
+ENDSSH
