@@ -62,7 +62,7 @@ void pollPulse() {
     ones = false;
   }
   
-  digitalWrite(D7, now - lastPulse < 200 ? LOW : HIGH);
+  digitalWrite(D7, now - lastPulse < 200 ? HIGH : LOW);
 }
 
 int doRing(String command) {
@@ -95,8 +95,8 @@ void setup() {
 
   Spark.function("ring", doRing);
 
-  attachInterrupt(ringButtonPin, ringButtonDown, RISING);
-  attachInterrupt(ringButtonPin, ringButtonUp, FALLING);
+  attachInterrupt(ringButtonPin, ringButtonDown, FALLING);
+  attachInterrupt(ringButtonPin, ringButtonUp, RISING);
 }
 
 void loop() {
