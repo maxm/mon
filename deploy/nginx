@@ -10,4 +10,8 @@ server {
       rewrite /calefon/(.*) /$1 break;
       proxy_pass http://localhost:8081;
     }
+    location /ledger/ {
+      rewrite /ledger/(.*) /$1 break;
+      proxy_pass http://localhost:8082;
+    }
 }

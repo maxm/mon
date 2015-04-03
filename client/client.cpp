@@ -76,12 +76,14 @@ int doRing(String command) {
   return 0;
 }
 
-void ringButtonDown() {
-  ringDownTime = millis();
-}
-void ringButtonUp() {
-  if (millis() - ringDownTime > 100) {
-    ring = true;
+void ringButtonChange() {
+  int button = digitalRead(ringButtonPin);
+  if (!button) {
+    ringDownTime = millis();
+  } else {
+    if (millis() - ringDownTime > 50) {
+      ring = true;
+    }
   }
 }
 
@@ -95,8 +97,7 @@ void setup() {
 
   Spark.function("ring", doRing);
 
-  attachInterrupt(ringButtonPin, ringButtonDown, FALLING);
-  attachInterrupt(ringButtonPin, ringButtonUp, RISING);
+  attachInterrupt(ringButtonPin, ringButtonChange, CHANGE);
 }
 
 void loop() {
