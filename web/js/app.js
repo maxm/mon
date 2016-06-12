@@ -26,6 +26,9 @@
   var selectionStart = 0;
   var selectionEnd = 0;
 
+  var WhperPulse = 1/1.6;
+  var WmsPerPulse = 60*60*1000*WhperPulse;
+
   $(document).ready(function() {
     canvas = document.getElementById("canvas");
     context = canvas.getContext("2d");
@@ -85,7 +88,7 @@
   function pollPulses() {
     if (pollTimer) clearTimeout(pollTimer);
     var time = pollPulseEnd ? pollPulseEnd : new Date().getTime();
-    $.get("http://server.max.uy:8080/feed", { name: "power", from: time - pollPulseMillis, to: time },function(data) {
+    $.get("http://server.max.uy/mon/feed", { name: "power", from: time - pollPulseMillis, to: time },function(data) {
       lastPulses = data;
       drawChart();
       updateNow();
@@ -338,7 +341,7 @@
 
   function deltaToWatts(delta) {
     if (delta == 0) return 0;
-    return Math.round(60*60*1000/delta);
+    return Math.round(WmsPerPulse/delta);
   }
 
   setPulseHourSpan = function(hours) {
