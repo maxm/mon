@@ -16,8 +16,8 @@
       });
       function updateClock() {
         var time = moment();
-        console.log(timezone)
-        if (timezone != null) time = time.zone(timezone)
+        // console.log(timezone)
+        // if (timezone != null) time = time.zone(timezone)
         $('#clock').text(time.format('HH:mm'));
         setTimeout(updateClock, 60000);
       }
