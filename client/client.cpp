@@ -3,7 +3,7 @@
 #include "api_key.h"
 
 const int pulsePin = D6;
-const int ringButtonPin = D4;
+const int ringButtonPin = D3;
 const int ringSpeakerPin = A1;
 
 unsigned long lastPulse = 0;
@@ -81,7 +81,7 @@ void ringButtonChange() {
   if (!button) {
     ringDownTime = millis();
   } else {
-    if (millis() - ringDownTime > 50) {
+    if (millis() - ringDownTime > 60) {
       ring = true;
     }
   }
@@ -92,12 +92,12 @@ void setup() {
   
   pinMode(pulsePin, INPUT_PULLDOWN);
 
-  pinMode(ringButtonPin, INPUT_PULLUP);
-  pinMode(ringSpeakerPin, OUTPUT);
+  // pinMode(ringButtonPin, INPUT);
+  // pinMode(ringSpeakerPin, OUTPUT);
 
-  Spark.function("ring", doRing);
+  // Spark.function("ring", doRing);
 
-  attachInterrupt(ringButtonPin, ringButtonChange, CHANGE);
+  // attachInterrupt(ringButtonPin, ringButtonChange, CHANGE);
 }
 
 void loop() {
