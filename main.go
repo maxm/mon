@@ -150,7 +150,8 @@ func post(w http.ResponseWriter, r *http.Request) {
   value, err := formInt(w, r, "value")
   if err != nil { return }
 
-  Post(name, time, value)
+  values := []int64{value}
+  Post(name, time, values)
 }
 
 func ringNotification() {
@@ -164,16 +165,25 @@ func ringNotification() {
   client.Do(r)
 }
 
-func Post(name string, time int64, value int64) {
+func Post(name string, time int64, values []int64) {
   if !checkDB() { return }
 
-  _, err := db.Exec("CREATE TABLE IF NOT EXISTS `" + name + "` ( `time` bigint UNIQUE, `value` int )")
+  var err error = nil
+  if (len(values) == 1) {
+    _, err = db.Exec("CREATE TABLE IF NOT EXISTS `" + name + "` ( `time` bigint UNIQUE, `value` int )")
+  } else if (len(values) == 2) {
+    _, err = db.Exec("CREATE TABLE IF NOT EXISTS `" + name + "` ( `time` bigint UNIQUE, `value` int, `value1` int )")
+  }
   if err != nil {
     Log("Error creating table %v", err)
     return
   }
   
-  _, err = db.Exec("INSERT INTO " + name + " (time, value) VALUES (?, ?)", time, value)
+  if (len(values) == 1) {
+    _, err = db.Exec("INSERT INTO " + name + " (time, value) VALUES (?, ?)", time, values[0])
+  } else if (len(values) == 2) {
+    _, err = db.Exec("INSERT INTO " + name + " (time, value, value1) VALUES (?, ?, ?)", time, values[0], values[1])
+  }
   if err != nil {
     Log("Error inserting value %v", err)
     return

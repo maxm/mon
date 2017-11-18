@@ -43,14 +43,19 @@ func handleConnection(conn net.Conn) {
         break
       }
 
-      value, err := strconv.ParseInt(line, 10, 64)
-      if err != nil {
-        Log("Stream got wrong value %v", line)
-        break
+      values := strings.Split(line, " ")
+      parsed_values := make([]int64, len(values))
+      for i := 0; i < len(values); i++ {
+        var err error = nil
+        parsed_values[i], err = strconv.ParseInt(values[i], 10, 64)
+        if err != nil {
+          Log("Stream got wrong value %v", line)
+          break
+        }
       }
 
       time := time.Now().UnixNano() / int64(time.Millisecond)
-      Post(name, time, value)
+      Post(name, time, parsed_values)
   }
 
   Log("Stream connection from %v complete", conn.RemoteAddr())

@@ -328,7 +328,7 @@
     for(;i < lastPulses.length && lastPulses[i][0] <= to; ++i) {
       ++count;
     }
-    return count;
+    return count * WhperPulse;
   }
 
   function findClosest(array, value, min, max) {
