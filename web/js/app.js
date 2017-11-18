@@ -357,7 +357,7 @@
     return false;
   }
 
-  scroll = function(pages) {
+  paging = function(pages) {
     if (pollPulseEnd == null) {
       pollPulseEnd = new Date().getTime();
     }
